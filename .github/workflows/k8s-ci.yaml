@@ -26,6 +26,7 @@ jobs:
           echo "head_ref=${{ github.head_ref }}" >> "$GITHUB_OUTPUT"
 
       - name: Validate YAML formatting and app names
+        shell: bash
         run: |
           set -e
           K8S_APPS_ROOT="k8s/apps"
@@ -68,6 +69,7 @@ jobs:
 
       - name: Detect changed environment folders (with kustomization.yaml)
         id: changed_envs
+        shell: bash
         run: |
           set -e
           BASE_REF="${{ github.base_ref }}"
@@ -98,6 +100,7 @@ jobs:
 
       - name: Run kustomize diff for changed environments
         if: steps.changed_envs.outputs.no_changes == 'false'
+        shell: bash
         run: |
           set -euo pipefail
           CHANGED_DIRS="${{ steps.changed_envs.outputs.changed_dirs }}"
