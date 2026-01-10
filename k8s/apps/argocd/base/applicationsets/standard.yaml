@@ -11,13 +11,13 @@ spec:
           - path: k8s/apps/*/prod
   template:
     metadata:
-      name: "{{ index .path.segments 2 }}"
+      name: '{{ index .path.segments 2 }}'
     spec:
       project: default
       source:
         repoURL: https://github.com/michaelchee-aeon360/k8s-example.git
         targetRevision: main
-        path: "{{ path.path }}"
+        path: '{{ path.path }}'
       destination:
         name: in-cluster
       syncPolicy:
