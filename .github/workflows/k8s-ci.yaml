@@ -1,38 +1,80 @@
 name: Validate Kubernetes Manifests
+
 on:
   pull_request:
     branches:
       - main
     paths:
-      - k8s/apps/**
+      - 'k8s/apps/**'
+
 jobs:
   validate:
     runs-on: ubuntu-latest
     container:
-      image: alpine/k8s:1.31.7 # includes kubectl, helm, yq, git, bash
+      image: alpine/k8s:1.31.7  # includes kubectl, helm, yq, git, bash
+
     steps:
       - name: Checkout code (current PR)
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # needed for full history & base branch comparison
+          fetch-depth: 0  # needed for full history & base branch comparison
+
       - name: Set up variables
         id: vars
         run: |
           echo "base_ref=${{ github.base_ref }}" >> "$GITHUB_OUTPUT"
           echo "head_ref=${{ github.head_ref }}" >> "$GITHUB_OUTPUT"
+
       - name: Validate YAML formatting and app names
-        shell: bash
-        run: "set -e\n\nK8S_APPS_ROOT=\"k8s/apps\"\n\n# --- 1. YAML Formatting Check ---\necho \"\U0001F50D Checking YAML formatting...\"\nformatted_files=()\nwhile IFS= read -r -d '' file; do\n  if ! yq eval '.' \"$file\" > /tmp/formatted.yaml 2>/dev/null; then\n    echo \"❌ Invalid YAML syntax in $file\"\n    exit 1\n  fi\n  if ! cmp -s \"$file\" /tmp/formatted.yaml; then\n    formatted_files+=(\"$file\")\n  fi\ndone < <(find . -path \"./$K8S_APPS_ROOT/*/*/*.yaml\" -print0 2>/dev/null || true)\n\nif [ ${#formatted_files[@]} -gt 0 ]; then\n  echo \"❌ The following files need reformatting:\"\n  printf '  %s\\n' \"${formatted_files[@]}\"\n  echo \"\"\n  echo \"\U0001F4A1 Fix with: yq eval '.' -i <file>\"\n  exit 1\nelse\n  echo \"✅ All YAML files are correctly formatted.\"\nfi\n\n# --- 2. App Name Validation ---\necho \"\U0001F50D Validating app name format...\"\nwhile IFS= read -r -d '' app_dir; do\n  app_name=$(basename \"$app_dir\")\n  if [[ ! \"$app_name\" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; then\n    echo \"❌ Invalid app name: '$app_name'\"\n    echo \"   → Must contain only lowercase letters, digits, and dashes (e.g., my-app-v1).\"\n    exit 1\n  fi\ndone < <(find \"./$K8S_APPS_ROOT\" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null || true)\n\necho \"✅ All app names are valid.\"\n"
+        run: |
+          set -e
+          K8S_APPS_ROOT="k8s/apps"
+
+          # 1. YAML Formatting Check
+          echo "🔍 Checking YAML formatting..."
+          formatted_files=()
+          while IFS= read -r -d '' file; do
+            if ! yq eval '.' "$file" > /tmp/formatted.yaml 2>/dev/null; then
+              echo "❌ Invalid YAML syntax in $file"
+              exit 1
+            fi
+            if ! cmp -s "$file" /tmp/formatted.yaml; then
+              formatted_files+=("$file")
+            fi
+          done < <(find . -path "./$K8S_APPS_ROOT/*/*/*.yaml" -print0 2>/dev/null || true)
+
+          if [ ${#formatted_files[@]} -gt 0 ]; then
+            echo "❌ The following files need reformatting:"
+            printf '  %s\n' "${formatted_files[@]}"
+            echo ""
+            echo "💡 Fix with: yq eval '.' -i <file>"
+            exit 1
+          else
+            echo "✅ All YAML files are correctly formatted."
+          fi
+
+          # 2. App Name Validation
+          echo "🔍 Validating app name format..."
+          while IFS= read -r -d '' app_dir; do
+            app_name=$(basename "$app_dir")
+            if [[ ! "$app_name" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+              echo "❌ Invalid app name: '$app_name'"
+              echo "   → Must contain only lowercase letters, digits, and dashes (e.g., my-app-v1)."
+              exit 1
+            fi
+          done < <(find "./$K8S_APPS_ROOT" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null || true)
+
+          echo "✅ All app names are valid."
+
       - name: Detect changed environment folders (with kustomization.yaml)
         id: changed_envs
-        shell: bash
         run: |
           set -e
           BASE_REF="${{ github.base_ref }}"
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch origin "$BASE_REF":base_branch
 
-          # Get all unique env-like dirs from changed files
+          # Find changed env dirs matching pattern and containing kustomization.yaml
           candidate_dirs=$(git diff --name-only base_branch HEAD | \
             grep -E '^k8s/apps/[^/]+/(dev|staging|prod|dr)/' | \
             sed -E 's|^([^/]+/[^/]+/[^/]+/[^/]+).*|\1|' | sort -u)
@@ -53,12 +95,11 @@ jobs:
             printf '%s\n' "${valid_dirs[@]}" >> "$GITHUB_OUTPUT"
             echo "EOF" >> "$GITHUB_OUTPUT"
           fi
+
       - name: Run kustomize diff for changed environments
         if: steps.changed_envs.outputs.no_changes == 'false'
-        shell: bash
         run: |
           set -euo pipefail
-
           CHANGED_DIRS="${{ steps.changed_envs.outputs.changed_dirs }}"
           BASE_BRANCH="${{ github.base_ref }}"
 
@@ -66,30 +107,20 @@ jobs:
           echo "$CHANGED_DIRS"
 
           HAS_DIFF=false
-
           while IFS= read -r env_dir; do
             [ -z "$env_dir" ] && continue
-
             echo "::group::📄 Kustomize diff for $env_dir"
 
             # Render current manifests
-            kubectl kustomize "$env_dir" \
-              --enable-helm \
-              --load-restrictor LoadRestrictionsNone \
-              > /tmp/current.yaml
+            kubectl kustomize "$env_dir" --enable-helm --load-restrictor LoadRestrictionsNone > /tmp/current.yaml
 
             # Render base branch manifests
             git checkout "origin/$BASE_BRANCH" --quiet
-            kubectl kustomize "$env_dir" \
-              --enable-helm \
-              --load-restrictor LoadRestrictionsNone \
-              > /tmp/base.yaml
+            kubectl kustomize "$env_dir" --enable-helm --load-restrictor LoadRestrictionsNone > /tmp/base.yaml
             git checkout - --quiet
 
-            # Clean diff output for GitHub Actions logs
-            if diff -u /tmp/base.yaml /tmp/current.yaml \
-                | sed -E '/^(---|\+\+\+|@@)/d' \
-                | sed -E 's/^-/❌ -/; s/^\+/✅ +/'; then
+            # Show clean diff
+            if diff -u /tmp/base.yaml /tmp/current.yaml | sed -E '/^(---|\+\+\+|@@)/d; s/^-/❌ -/; s/^\+/✅ +/'; then
               echo "✅ No diff in $env_dir"
             else
               echo "::warning title=Kustomize Diff::$env_dir has rendered manifest changes"
