@@ -33,5 +33,5 @@ jobs:
 
       - name: Run kustomize diff for changed environments
         if: steps.changed_envs.outputs.no_changes == 'false'
-        run: bash ./.github/scripts/run-kustomize-diff.sh "${{ steps.changed_envs.outputs.changed_dirs }}" "${{ github.base_ref }}"
+        run: bash ./.github/scripts/kustomize-diff.sh "${{ steps.changed_envs.outputs.changed_dirs }}" "${{ github.base_ref }}"
         
