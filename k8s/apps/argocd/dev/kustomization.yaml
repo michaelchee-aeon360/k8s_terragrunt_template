@@ -18,4 +18,4 @@ patches:
     patch: |-
       - op: replace
         path: /data/url
-        value: "https://argocd.dev.data.aeon360.com.my"
+        value: "https://argocd.hello.data.aeon360.com.my"
