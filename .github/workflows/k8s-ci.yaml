@@ -67,7 +67,7 @@ jobs:
 
           echo "✅ All app names are valid."
 
-      - name: Detect changed environment folders (with kustomization.yaml)
+      - name: Detect changed environment folders
         id: changed_envs
         shell: bash
         run: |
@@ -76,28 +76,52 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch origin "$BASE_REF":base_branch
 
-          # Find changed env dirs matching pattern and containing kustomization.yaml
-          candidate_dirs=$(git diff --name-only base_branch HEAD | \
+          # Get list of all changed files in the PR
+          CHANGED_FILES=$(git diff --name-only base_branch HEAD)
+
+          # 1. Directly changed env dirs (existing logic)
+          DIRECT_ENV_DIRS=$(echo "$CHANGED_FILES" | \
             grep -E '^k8s/apps/[^/]+/(dev|staging|prod|dr)/' | \
             sed -E 's|^([^/]+/[^/]+/[^/]+/[^/]+).*|\1|' | sort -u)
 
-          valid_dirs=()
+          # 2. Apps whose 'base/' changed
+          APPS_WITH_BASE_CHANGED=$(echo "$CHANGED_FILES" | \
+            grep -E '^k8s/apps/[^/]+/base/' | \
+            sed -E 's|^k8s/apps/([^/]+)/base/.*|\1|' | sort -u)
+
+          # For each such app, add all its valid env dirs (that have kustomization.yaml)
+          INDIRECT_ENV_DIRS=()
+          while IFS= read -r app; do
+            if [ -n "$app" ]; then
+              for env in dev staging prod dr; do
+                env_path="k8s/apps/$app/$env"
+                if [ -f "$env_path/kustomization.yaml" ]; then
+                  INDIRECT_ENV_DIRS+=("$env_path")
+                fi
+              done
+            fi
+          done <<< "$APPS_WITH_BASE_CHANGED"
+
+          # Combine and deduplicate
+          ALL_CANDIDATE_DIRS=$(printf '%s\n' "${DIRECT_ENV_DIRS[@]}" "${INDIRECT_ENV_DIRS[@]}" | sort -u)
+
+          # Validate existence of kustomization.yaml
+          VALID_DIRS=()
           while IFS= read -r dir; do
             if [ -n "$dir" ] && [ -f "$dir/kustomization.yaml" ]; then
-              valid_dirs+=("$dir")
+              VALID_DIRS+=("$dir")
             fi
-          done <<< "$candidate_dirs"
+          done <<< "$ALL_CANDIDATE_DIRS"
 
-          if [ ${#valid_dirs[@]} -eq 0 ]; then
+          if [ ${#VALID_DIRS[@]} -eq 0 ]; then
             echo "no_changes=true" >> "$GITHUB_OUTPUT"
-            echo "ℹ️ No valid environment folders (with kustomization.yaml) changed."
+            echo "ℹ️ No relevant environment folders changed (directly or via base)."
           else
             echo "no_changes=false" >> "$GITHUB_OUTPUT"
             echo "changed_dirs<<EOF" >> "$GITHUB_OUTPUT"
-            printf '%s\n' "${valid_dirs[@]}" >> "$GITHUB_OUTPUT"
+            printf '%s\n' "${VALID_DIRS[@]}" >> "$GITHUB_OUTPUT"
             echo "EOF" >> "$GITHUB_OUTPUT"
           fi
-
       - name: Run kustomize diff for changed environments
         if: steps.changed_envs.outputs.no_changes == 'false'
         shell: bash
