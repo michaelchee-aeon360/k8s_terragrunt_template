@@ -118,6 +118,8 @@ jobs:
             echo "ℹ️ No relevant environment folders changed (directly or via base)."
           else
             echo "no_changes=false" >> "$GITHUB_OUTPUT"
+            echo "✅ Will validate these environment(s):"
+            printf '  - %s\n' "${VALID_DIRS[@]}"
             echo "changed_dirs<<EOF" >> "$GITHUB_OUTPUT"
             printf '%s\n' "${VALID_DIRS[@]}" >> "$GITHUB_OUTPUT"
             echo "EOF" >> "$GITHUB_OUTPUT"
@@ -129,9 +131,6 @@ jobs:
           set -euo pipefail
           CHANGED_DIRS="${{ steps.changed_envs.outputs.changed_dirs }}"
           BASE_BRANCH="${{ github.base_ref }}"
-
-          echo "🔄 Detected changed environments:"
-          echo "$CHANGED_DIRS"
 
           HAS_DIFF=false
           while IFS= read -r env_dir; do
