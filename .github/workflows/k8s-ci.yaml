@@ -30,10 +30,13 @@ jobs:
           BASE_REF="${{ github.base_ref }}"
           echo "Comparing against base branch: $BASE_REF"
 
+          # 👇 Fix: Mark workspace as safe for git
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
           # Fetch base ref
           git fetch origin "$BASE_REF":base_branch
 
-          # Find changed env dirs (e.g., k8s/apps/my-app/dev)
+          # Find changed env dirs
           CHANGED_ENV_DIRS=$(git diff --name-only base_branch HEAD | \
             grep -E '^k8s/apps/[^/]+/(dev|staging|prod|dr)/' | \
             sed -E 's|^([^/]+/[^/]+/[^/]+/[^/]+).*|\1|' | sort -u)
@@ -47,6 +50,7 @@ jobs:
             echo "$CHANGED_ENV_DIRS" >> "$GITHUB_OUTPUT"
             echo "EOF" >> "$GITHUB_OUTPUT"
           fi
+      
       - name: Run kustomize diff for changed environments
         if: steps.changed_envs.outputs.no_changes == 'false'
         run: "set -e\nBASE_REF=\"${{ github.base_ref }}\"\nCHANGED_DIRS=\"${{ steps.changed_envs.outputs.changed_dirs }}\"\n\necho \"\U0001F504 Detected changed environments:\"\necho \"$CHANGED_DIRS\"\n\nHAS_DIFF=false\nwhile IFS= read -r env_dir; do\n  [ -z \"$env_dir\" ] && continue\n  kust_file=\"$env_dir/kustomization.yaml\"\n  if [ ! -f \"$kust_file\" ]; then\n    echo \"⚠️ Skipping $env_dir (no kustomization.yaml)\"\n    continue\n  fi\n\n  echo \"\U0001F4C4 Processing $env_dir...\"\n\n  # Render current (HEAD)\n  kubectl kustomize \"$env_dir\" --enable-helm --load-restrictor LoadRestrictionsNone > /tmp/current.yaml\n\n  # Render base branch\n  git checkout base_branch --quiet\n  kubectl kustomize \"$env_dir\" --enable-helm --load-restrictor LoadRestrictionsNone > /tmp/base.yaml\n  git checkout -f HEAD --quiet\n\n  if ! diff -u /tmp/base.yaml /tmp/current.yaml > /tmp/diff.txt; then\n    echo \"\U0001F536 DIFF in $env_dir:\"\n    cat /tmp/diff.txt\n    HAS_DIFF=true\n  else\n    echo \"✅ No diff in $env_dir\"\n  fi\ndone <<< \"$CHANGED_DIRS\"\n\nif [ \"$HAS_DIFF\" = true ]; then\n  echo \"⚠️ One or more environments have rendered manifest changes.\"\n  echo \"Review the diffs above to ensure they are intentional.\"\n  # Note: We don't fail here—just inform. Change to 'exit 1' if you want to block merges.\nfi"
