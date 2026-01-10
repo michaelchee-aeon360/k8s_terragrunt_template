@@ -24,6 +24,7 @@ jobs:
           echo "head_ref=${{ github.head_ref }}" >> "$GITHUB_OUTPUT"
 
       - name: Validate YAML formatting and app names
+        shell: bash
         run: |
           set -e
 
