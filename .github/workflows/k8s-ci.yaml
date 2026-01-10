@@ -59,7 +59,8 @@ jobs:
         if: steps.changed_envs.outputs.no_changes == 'false'
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
+
           CHANGED_DIRS="${{ steps.changed_envs.outputs.changed_dirs }}"
 
           echo "🔄 Detected changed environments:"
@@ -72,17 +73,27 @@ jobs:
 
             echo "::group::📄 Kustomize diff for $env_dir"
 
-            kubectl kustomize "$env_dir" --enable-helm --load-restrictor LoadRestrictionsNone > /tmp/current.yaml
+            # Render current manifests
+            kubectl kustomize "$env_dir" \
+              --enable-helm \
+              --load-restrictor LoadRestrictionsNone \
+              > /tmp/current.yaml
 
+            # Render base branch manifests
             git checkout base_branch --quiet
-            kubectl kustomize "$env_dir" --enable-helm --load-restrictor LoadRestrictionsNone > /tmp/base.yaml
+            kubectl kustomize "$env_dir" \
+              --enable-helm \
+              --load-restrictor LoadRestrictionsNone \
+              > /tmp/base.yaml
             git checkout -f HEAD --quiet
 
-            if ! diff -u /tmp/base.yaml /tmp/current.yaml; then
+            # Show clean diff (no headers, no ANSI, GitHub-friendly)
+            if diff -u /tmp/base.yaml /tmp/current.yaml \
+                | sed -E '/^(---|\+\+\+|@@)/d'; then
+              echo "✅ No diff in $env_dir"
+            else
               echo "::warning title=Kustomize Diff::$env_dir has rendered manifest changes"
               HAS_DIFF=true
-            else
-              echo "✅ No diff in $env_dir"
             fi
 
             echo "::endgroup::"
