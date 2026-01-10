@@ -74,9 +74,15 @@ jobs:
             kubectl kustomize "$env_dir" --enable-helm --load-restrictor LoadRestrictionsNone > /tmp/base.yaml
             git checkout -f HEAD --quiet
 
-            if ! diff -u /tmp/base.yaml /tmp/current.yaml > /tmp/diff.txt; then
+            if ! diff_output=$(diff -u /tmp/base.yaml /tmp/current.yaml); then
               echo "🔶 DIFF in $env_dir:"
-              cat /tmp/diff.txt
+              # Show only +, -, and context lines — with color, no headers or @@ markers
+              echo "$diff_output" | \
+                grep -E '^\+|^-|^ ' | \
+                sed -e "s/^-/\x1b[31m-/g" \
+                    -e "s/^+/\x1b[32m+/g" \
+                    -e "s/^ /\x1b[37m /g" \
+                    -e "s/$/\x1b[0m/"
               HAS_DIFF=true
             else
               echo "✅ No diff in $env_dir"
