@@ -61,26 +61,54 @@ jobs:
         run: |
           set -e
           CHANGED_DIRS="${{ steps.changed_envs.outputs.changed_dirs }}"
-          HAS_DIFF=false
 
+          echo "### 🚀 Kustomize Diff Summary" >> $GITHUB_STEP_SUMMARY
+          echo "Detected changes in: \`$CHANGED_DIRS\`" >> $GITHUB_STEP_SUMMARY
+
+          HAS_DIFF=false
+          
+          # Loop through each directory
           while IFS= read -r env_dir; do
             [ -z "$env_dir" ] && continue
-            echo "📄 Processing $env_dir..."
 
+            # Create a collapsible group in the console logs
+            echo "::group::📄 Processing $env_dir"
+            
+            # Generate current manifests
             kubectl kustomize "$env_dir" --enable-helm --load-restrictor LoadRestrictionsNone > /tmp/current.yaml
+
+            # Generate base manifests from the target branch
             git checkout base_branch --quiet
             kubectl kustomize "$env_dir" --enable-helm --load-restrictor LoadRestrictionsNone > /tmp/base.yaml
             git checkout -f HEAD --quiet
 
-            if ! diff_output=$(diff -u /tmp/base.yaml /tmp/current.yaml); then
-              echo "🔶 DIFF in $env_dir:"
-              echo "$diff_output" | grep -E '^\+|^-'
+            # Run diff. We use || true because diff exits with 1 if changes are found
+            DIFF_CONTENT=$(diff -u /tmp/base.yaml /tmp/current.yaml || true)
+
+            if [ -n "$DIFF_CONTENT" ]; then
               HAS_DIFF=true
+              
+              # 1. Output to Console with ANSI Colors
+              echo "🔶 DIFF found in $env_dir:"
+              diff --color=always -u /tmp/base.yaml /tmp/current.yaml || true
+
+              # 2. Output to GitHub Step Summary (Markdown)
+              echo "<details><summary>🔶 <b>$env_dir</b> (Click to expand)</summary>" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo '```diff' >> $GITHUB_STEP_SUMMARY
+              echo "$DIFF_CONTENT" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              echo "</details>" >> $GITHUB_STEP_SUMMARY
             else
               echo "✅ No diff in $env_dir"
+              echo "✅ **$env_dir**: No changes detected." >> $GITHUB_STEP_SUMMARY
             fi
+            
+            echo "::endgroup::"
           done <<< "$CHANGED_DIRS"
 
           if [ "$HAS_DIFF" = true ]; then
             echo "⚠️ One or more environments have rendered manifest changes."
+            # Optional: fail the check if you want to block PRs on diffs
+            # exit 1 
           fi
