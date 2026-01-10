@@ -9,7 +9,7 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     container:
-      image: alpine/k8s:1.32.11 # includes kubectl, helm, yq, git, bash
+      image: alpine/k8s:1.31.7 # includes kubectl, helm, yq, git, bash
     steps:
       - name: Checkout code (current PR)
         uses: actions/checkout@v4
