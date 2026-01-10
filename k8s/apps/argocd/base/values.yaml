@@ -26,7 +26,7 @@ server:
       cloud.google.com/backend-config: '{"ports":{"http":"default"}}'
       cloud.googe.com/neg: '{"ingress":true}'
 
-dex: 
+dex:
   livenessProbe:
     enabled: true
     httpPath: /api/dex/.well-known/openid-configuration
