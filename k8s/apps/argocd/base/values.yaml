@@ -1,0 +1,33 @@
+configs:
+  cm:
+    admin.enabled: true
+    url: https://argocd.data.aeon360.com.my
+    kustomize.buildOptions: "--enable-helm --load-restrictor LoadRestrictionsNone"
+    dex.config: |
+      connectors:
+        - type: oidc
+          name: Google
+          id: google
+          config:
+            issuer: https://accounts.google.com
+            clientId: $argocd-oauth-client-secrets:clientId
+            clientSecret: $argocd-oauth-client-secrets: clientSecret
+  rbac:
+    policy.default: role:readonly
+
+  params:
+    server.insecure: "true"
+    server.dex.server: http://argocd-dex-server:5556
+    dexserver.disable.tls: "true"
+
+server:
+  service:
+    annotations:
+      cloud.google.com/backend-config: '{"ports":{"http":"default"}}'
+      cloud.googe.com/neg: '{"ingress":true}'
+
+dex: 
+  livenessProbe:
+    enabled: true
+    httpPath: /api/dex/.well-known/openid-configuration
+    httpPort: http

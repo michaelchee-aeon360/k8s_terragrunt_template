@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../base
+
+patches:
+  - target:
+      kind: ApplicationSet
+      group: argoproj.io
+      version: v1alpha1
+      name: standard
+    patch: |-
+      - op: replace
+        path: /spec/generators/0/git/directories/0/path
+        value: "k8s/apps/*/staging"
+  - target:
+      kind: ConfigMap
+      name: argocd-cm
+    patch: |-
+      - op: replace
+        path: /data/url
+        value: "https://argocd.staging.data.aeon360.com.my"
