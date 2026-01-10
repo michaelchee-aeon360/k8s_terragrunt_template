@@ -66,25 +66,26 @@ jobs:
           echo "$CHANGED_DIRS"
 
           HAS_DIFF=false
+
           while IFS= read -r env_dir; do
             [ -z "$env_dir" ] && continue
 
-            echo "📄 Processing $env_dir..."
+            echo "::group::📄 Kustomize diff for $env_dir"
+
             kubectl kustomize "$env_dir" --enable-helm --load-restrictor LoadRestrictionsNone > /tmp/current.yaml
 
             git checkout base_branch --quiet
             kubectl kustomize "$env_dir" --enable-helm --load-restrictor LoadRestrictionsNone > /tmp/base.yaml
             git checkout -f HEAD --quiet
 
-            # Use colordiff + filter out headers/hunk markers
-            if ! colordiff_output=$(colordiff -u /tmp/base.yaml /tmp/current.yaml); then
-              echo "🔶 DIFF in $env_dir:"
-              # Remove ---, +++, and @@ lines
-              echo "$colordiff_output" | grep -vE '^(\+\+\+|---|@@)'
+            if ! diff -u /tmp/base.yaml /tmp/current.yaml; then
+              echo "::warning title=Kustomize Diff::$env_dir has rendered manifest changes"
               HAS_DIFF=true
             else
               echo "✅ No diff in $env_dir"
             fi
+
+            echo "::endgroup::"
           done <<< "$CHANGED_DIRS"
 
           if [ "$HAS_DIFF" = true ]; then
