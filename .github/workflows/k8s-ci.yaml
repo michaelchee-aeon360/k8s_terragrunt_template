@@ -25,13 +25,13 @@ jobs:
           echo "head_ref=${{ github.head_ref }}" >> "$GITHUB_OUTPUT"
 
       - name: Validate YAML formatting and app names
-        run: ./.github/scripts/validate-yaml-and-app-names.sh
+        run: bash ./.github/scripts/validate-yaml-and-app-names.sh
 
       - name: Detect changed environment folders
         id: changed_envs
-        run: ./.github/scripts/detect-changed-envs.sh "${{ github.base_ref }}"
+        run: bash ./.github/scripts/detect-changed-envs.sh "${{ github.base_ref }}"
 
       - name: Run kustomize diff for changed environments
         if: steps.changed_envs.outputs.no_changes == 'false'
-        run: ./.github/scripts/run-kustomize-diff.sh "${{ steps.changed_envs.outputs.changed_dirs }}" "${{ github.base_ref }}"
+        run: bash ./.github/scripts/run-kustomize-diff.sh "${{ steps.changed_envs.outputs.changed_dirs }}" "${{ github.base_ref }}"
         
