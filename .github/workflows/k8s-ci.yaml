@@ -61,26 +61,20 @@ jobs:
         run: |
           set -e
           CHANGED_DIRS="${{ steps.changed_envs.outputs.changed_dirs }}"
-
-          echo "🔄 Detected changed environments:"
-          echo "$CHANGED_DIRS"
-
           HAS_DIFF=false
+
           while IFS= read -r env_dir; do
             [ -z "$env_dir" ] && continue
-
             echo "📄 Processing $env_dir..."
-            kubectl kustomize "$env_dir" --enable-helm --load-restrictor LoadRestrictionsNone > /tmp/current.yaml
 
+            kubectl kustomize "$env_dir" --enable-helm --load-restrictor LoadRestrictionsNone > /tmp/current.yaml
             git checkout base_branch --quiet
             kubectl kustomize "$env_dir" --enable-helm --load-restrictor LoadRestrictionsNone > /tmp/base.yaml
             git checkout -f HEAD --quiet
 
-            # Use colordiff + filter out headers/hunk markers
-            if ! colordiff_output=$(colordiff -u /tmp/base.yaml /tmp/current.yaml); then
+            if ! diff_output=$(diff -u /tmp/base.yaml /tmp/current.yaml); then
               echo "🔶 DIFF in $env_dir:"
-              # Remove ---, +++, and @@ lines
-              echo "$colordiff_output" | grep -vE '^(\+\+\+|---|@@)'
+              echo "$diff_output" | grep -E '^\+|^-'
               HAS_DIFF=true
             else
               echo "✅ No diff in $env_dir"
