@@ -3,6 +3,8 @@ name: Terragrunt Plan
 on:
   pull_request:
     branches: [main]
+    paths:
+      - "terragrunt/**"
 
 jobs:
   format-validate-plan:
