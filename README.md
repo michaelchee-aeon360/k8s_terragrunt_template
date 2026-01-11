@@ -36,17 +36,18 @@ Infrastructure management is handled via Terragrunt to ensure DRY (Don't Repeat 
 
 Triggered on Pull Requests to `k8s/apps/**`.
 
-* **Validation**: Enforces valid YAML syntax and strictly lowercase, dashed app names via `validate-yaml-and-app-names.sh`.
-* **Impact Detection**: Uses `detect-changed-envs.sh` to identify which environments are affected by changes in manifests or underlying Helm charts.
+* **Validation**: Enforces valid YAML syntax and lowercase, dashed app names via `validate-yaml-and-app-names.sh`.
+* **Impact Detection**: Uses `detect-changed-envs.sh` to identify affected environments based on manifest or Helm chart changes.
 * **Kustomize Diff**: Runs `kustomize-diff.sh` to generate a visual diff of the rendered manifests.
 
 ### Terragrunt CI/CD
 
+The Terragrunt pipeline is designed for safety and automated orchestration:
+
 * **PR Plan (`terragrunt-pr-plan.yaml`)**: Runs formatting checks and validations on pull requests.
-* **Apply (`terragrunt-apply.yaml`)**: Executes infrastructure changes upon merging into the `main` branch.
-
----
-
+* **Apply (`terragrunt-apply.yaml`)**: Executes changes upon merging into the `main` branch.
+* **Concurrency Control**: The pipeline is limited to one active run at a time (`group: terragrunt-apply`) to prevent state lock conflicts during deployments.
+* **Production Gate**: The apply job is tied to the `production` environment, requiring manual approval before the infrastructure changes are executed.
 ## ⛓️ Terragrunt Handling Dependencies
 
 To manage complex infrastructures without manually modifying CI/CD workflows, we leverage Terragrunt's native orchestration capabilities.
