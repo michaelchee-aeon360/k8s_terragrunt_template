@@ -54,6 +54,7 @@ if echo "$CHANGED_FILES" | grep -q "^$HELM_CHARTS_ROOT/"; then
   done < <(find "$K8S_APPS_ROOT" -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0)
 fi
 
+echo "$DIRECT_APPS"
 echo "$HELM_AFFECTED_APPS"
 
 # --- Combine apps (deduped) ---
