@@ -39,6 +39,7 @@ if echo "$CHANGED_FILES" | grep -q "^$HELM_CHARTS_ROOT/"; then
 
       # Extract all chart names used in this kustomization
       chart_names_raw=$(yq eval '.helmCharts[].name // []' "$kust_file" 2>/dev/null || true)
+      echo "$chart_names_raw"
       [ -z "$chart_names_raw" ] && continue
 
       # Check each chart
