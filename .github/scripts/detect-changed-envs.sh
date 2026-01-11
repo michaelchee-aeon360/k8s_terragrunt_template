@@ -39,6 +39,7 @@ if echo "$CHANGED_FILES" | grep -q "^$HELM_CHARTS_ROOT/"; then
 
       echo "  -> Checking: $kust_file"
       chart_names_raw=$(yq eval '.helmCharts[].name // []' "$kust_file" 2>/dev/null || true)
+      echo "chart name raw: $chart_names_raw"
       if [ -z "$chart_names_raw" ]; then
         continue
       fi
