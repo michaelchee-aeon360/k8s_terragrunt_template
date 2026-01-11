@@ -35,6 +35,7 @@ if echo "$CHANGED_FILES" | grep -q "^$HELM_CHARTS_ROOT/"; then
     # Check base + all overlays
     for layer in base dev staging prod dr; do
       kust_file="$app_dir/$layer/kustomization.yaml"
+      echo "$kust_file"
       [ ! -f "$kust_file" ] && continue
 
       # Extract all chart names used in this kustomization
@@ -54,8 +55,6 @@ if echo "$CHANGED_FILES" | grep -q "^$HELM_CHARTS_ROOT/"; then
   done < <(find "$K8S_APPS_ROOT" -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0)
 fi
 
-echo "$DIRECT_APPS"
-echo "$HELM_AFFECTED_APPS"
 
 # --- Combine apps (deduped) ---
 ALL_APPS=$(printf '%s\n' "${DIRECT_APPS[@]}" "${HELM_AFFECTED_APPS[@]}" | sort -u)
