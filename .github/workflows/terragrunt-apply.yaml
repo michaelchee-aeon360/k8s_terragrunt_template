@@ -13,7 +13,7 @@ concurrency:
 jobs:
   format-validation-plan:
     name: Run Terraform and Terragrunt Format Checks, Validation, and Plan
-    uses: ./.github/workflows/terragrunt-reuse-plan.yml
+    uses: ./.github/workflows/terragrunt-reuse-plan.yaml
   apply:
     name: Run Terragrunt Apply
     runs-on: ubuntu-latest
