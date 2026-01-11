@@ -28,8 +28,9 @@ else
     echo "  - $app"
     
     # For each environment, check if kustomization.yaml exists
-    for env in dev staging prod dr; do
+    for env in base dev staging prod dr; do
       env_dir="$K8S_APPS_ROOT/$app/$env"
+      echo "$env_dir"
       if [ -f "$env_dir/kustomization.yaml" ]; then
         VALID_DIRS+=("$env_dir")
       fi
