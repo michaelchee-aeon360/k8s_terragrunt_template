@@ -39,7 +39,6 @@ if echo "$CHANGED_FILES" | grep -q "^$HELM_CHARTS_ROOT/"; then
 
       # Extract all chart names used in this kustomization
       chart_names_raw=$(yq eval '.helmCharts[].name // []' "$kust_file" 2>/dev/null || true)
-      echo "$chart_names_raw"
       [ -z "$chart_names_raw" ] && continue
 
       # Check each chart
@@ -54,6 +53,8 @@ if echo "$CHANGED_FILES" | grep -q "^$HELM_CHARTS_ROOT/"; then
     done
   done < <(find "$K8S_APPS_ROOT" -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0)
 fi
+
+echo "$HELM_AFFECTED_APPS"
 
 # --- Combine apps (deduped) ---
 ALL_APPS=$(printf '%s\n' "${DIRECT_APPS[@]}" "${HELM_AFFECTED_APPS[@]}" | sort -u)
