@@ -9,4 +9,4 @@ on:
 jobs:
   format-validation-plan:
     name: Run Terraform and Terragrunt Format Checks, Validation, and Plan
-    uses: ./.github/workflows/reusable-terragrunt-format-check.yml
+    uses: ./.github/workflows/terragrunt-reuse-plan.yml
