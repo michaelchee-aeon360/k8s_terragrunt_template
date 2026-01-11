@@ -29,6 +29,7 @@ if echo "$CHANGED_FILES" | grep -q "^$HELM_CHARTS_ROOT/"; then
 
   # Scan ALL apps for usage of these charts
   while IFS= read -r app_dir; do
+    echo "app dir: $app_dir"
     app_name=$(basename "$app_dir")
     echo "App name: $app_name"
     found=false
