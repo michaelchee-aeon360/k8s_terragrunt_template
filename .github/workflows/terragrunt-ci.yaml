@@ -1,0 +1,31 @@
+name: Terragrunt Plan
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  format-validate-plan:
+    name: Format, Validate, and Plan
+    runs-on: ubuntu-latest
+    container:
+      image: alpine/terragrunt:1.14.1
+    defaults:
+      run:
+        working-directory: ./terragrunt/environments
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check Terraform formatting
+        working-directory: ./terragrunt
+        run: terraform fmt -recursive -check -diff
+
+      - name: Check Terragrunt HCL formatting
+        run: terragrunt hcl fmt --check
+
+      # - name: Terragrunt validate
+      #   run: terragrunt run --all validate
+
+      # - name: Terragrunt plan
+      #   run: terragrunt run --all plan

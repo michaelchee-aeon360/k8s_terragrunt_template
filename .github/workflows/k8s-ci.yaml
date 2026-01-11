@@ -4,7 +4,7 @@ on:
     branches:
       - main
     paths:
-      - 'k8s/apps/**'
+      - "k8s/apps/**"
 jobs:
   validate:
     runs-on: ubuntu-latest
