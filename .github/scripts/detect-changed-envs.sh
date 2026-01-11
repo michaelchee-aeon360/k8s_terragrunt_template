@@ -37,14 +37,13 @@ if echo "$CHANGED_FILES" | grep -q "^$HELM_CHARTS_ROOT/"; then
         continue
       fi
 
-      echo "  -> Checking: $kust_file"
       chart_names_raw=$(yq eval '.helmCharts[].name // []' "$kust_file" 2>/dev/null || true)
       if [ -n "$chart_names_raw" ]; then
         while IFS= read -r chart; do
             # Trim whitespace
             chart=$(echo "$chart" | xargs)
             if [ -n "$chart" ] && echo "$CHANGED_HELM_CHARTS" | grep -Fxq "$chart"; then
-            echo "     ✅ Match found: '$chart' → marking app '$app_name'"
+            echo "  ✅ Match found: '$chart'"
             HELM_AFFECTED_APPS+=("$app_name")
             break 2
             fi
