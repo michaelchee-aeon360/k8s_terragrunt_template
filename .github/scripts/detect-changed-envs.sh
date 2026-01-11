@@ -18,47 +18,45 @@ DIRECT_APPS=$(echo "$CHANGED_FILES" | \
 # --- 2. Apps affected by Helm chart changes ---
 HELM_AFFECTED_APPS=()
 
-# Check if ANY Helm chart changed
 if echo "$CHANGED_FILES" | grep -q "^$HELM_CHARTS_ROOT/"; then
-  # Extract unique changed chart names
+  # Extract changed Helm chart names
   CHANGED_HELM_CHARTS=$(echo "$CHANGED_FILES" | \
     grep -E "^$HELM_CHARTS_ROOT/[^/]+/" | \
     sed -E "s|^$HELM_CHARTS_ROOT/([^/]+)/.*|\1|" | sort -u)
 
   echo "🔍 Detected changes in Helm charts: $(echo $CHANGED_HELM_CHARTS)"
 
-  # Scan ALL apps for usage of these charts
-  while IFS= read -r app_dir; do
-    echo "app dir: $app_dir"
+  # Scan every app directory
+  while IFS= read -r -d '' app_dir; do
     app_name=$(basename "$app_dir")
-    echo "App name: $app_name"
-    found=false
+    echo "🔍 Scanning app: $app_name"
 
-    # Check base + all overlays
     for layer in base dev staging prod dr; do
-      kust_file="$K8S_APPS_ROOT/$app_name/$layer/kustomization.yaml"
-      echo "$kust_file"
-      [ ! -f "$kust_file" ] && continue
+      kust_file="$app_dir/$layer/kustomization.yaml"
+      if [ ! -f "$kust_file" ]; then
+        continue
+      fi
 
-      # Extract all chart names used in this kustomization
+      echo "  -> Checking: $kust_file"
       chart_names_raw=$(yq eval '.helmCharts[].name // []' "$kust_file" 2>/dev/null || true)
-      [ -z "$chart_names_raw" ] && continue
+      if [ -z "$chart_names_raw" ]; then
+        continue
+      fi
 
-      # Check each chart
+      # Parse each chart name
       while IFS= read -r chart; do
         chart=$(echo "$chart" | xargs)
         if [ -n "$chart" ] && echo "$CHANGED_HELM_CHARTS" | grep -Fxq "$chart"; then
+          echo "     ✅ Match found: '$chart' → marking app '$app_name'"
           HELM_AFFECTED_APPS+=("$app_name")
-          found=true
-          break 2  # break both loops
+          break 2  # break layer loop + chart loop
         fi
       done <<< "$(echo "$chart_names_raw" | yq eval -o=j -I=0 '.[]' - | tr -d '"')"
     done
-  done < <(find "$K8S_APPS_ROOT" -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0)
+  done < <(find "$K8S_APPS_ROOT" -mindepth 1 -maxdepth 1 -type d -print0)
 fi
 
-
-# --- Combine apps (deduped) ---
+# --- Combine and deduplicate ---
 ALL_APPS=$(printf '%s\n' "${DIRECT_APPS[@]}" "${HELM_AFFECTED_APPS[@]}" | sort -u)
 
 VALID_DIRS=()
@@ -81,7 +79,7 @@ else
 
   if [ ${#VALID_DIRS[@]} -eq 0 ]; then
     echo "no_changes=true" >> "$GITHUB_OUTPUT"
-    echo "⚠️ Apps identified, but no valid environments found (missing kustomization.yaml)."
+    echo "⚠️ Apps identified, but no valid environments found."
   else
     echo "no_changes=false" >> "$GITHUB_OUTPUT"
     echo "✅ Will validate these environment(s):"
