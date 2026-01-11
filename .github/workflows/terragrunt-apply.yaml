@@ -7,15 +7,15 @@ on:
       - "terragrunt/**"
 
 concurrency:
-  group: terragrunt-apply-main
+  group: terragrunt-apply
   cancel-in-progress: false
 
 jobs:
   format-validation-plan:
-    name: Run Terraform and Terragrunt Format Checks, Validation, and Plan
+    name: Main Format Checks, Validation, and Plan
     uses: ./.github/workflows/terragrunt-reuse-plan.yaml
   apply:
-    name: Run Terragrunt Apply
+    name: Terragrunt Apply
     runs-on: ubuntu-latest
     container:
       image: alpine/terragrunt:1.14.1
