@@ -56,6 +56,9 @@ if echo "$CHANGED_FILES" | grep -q "^$HELM_CHARTS_ROOT/"; then
   done < <(find "$K8S_APPS_ROOT" -mindepth 1 -maxdepth 1 -type d -print0)
 fi
 
+echo "helm app: $HELM_AFFECTED_APPS"
+
+
 # --- Combine and deduplicate ---
 ALL_APPS=$(printf '%s\n' "${DIRECT_APPS[@]}" "${HELM_AFFECTED_APPS[@]}" | sort -u)
 
