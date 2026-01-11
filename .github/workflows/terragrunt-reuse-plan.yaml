@@ -1,26 +1,34 @@
-name: Terragrunt Plan
+name: Reusable Terragrunt Format Check
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - "terragrunt/**"
+  workflow_call:
+    inputs:
+      terragrunt_root:
+        description: 'Root directory containing Terragrunt configs (relative to repo root)'
+        required: false
+        type: string
+        default: ./terragrunt/environments
+      terraform_working_dir:
+        description: 'Directory where .tf files live (for terraform fmt)'
+        required: false
+        type: string
+        default: ./terragrunt
 
 jobs:
-  format-validate-plan:
-    name: Format, Validate, and Plan
+  format-validation-plan:
+    name: Check Terraform & Terragrunt Formatting
     runs-on: ubuntu-latest
     container:
       image: alpine/terragrunt:1.14.1
     defaults:
       run:
-        working-directory: ./terragrunt/environments
+        working-directory: ${{ inputs.terragrunt_root }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Check Terraform formatting
-        working-directory: ./terragrunt  # terraform files may be in root of terragrunt dir
+        working-directory: ${{ inputs.terraform_working_dir }}
         run: |
           echo "🔍 Checking Terraform code formatting..."
           if terraform fmt --recursive --check; then
