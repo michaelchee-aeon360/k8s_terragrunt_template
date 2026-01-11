@@ -20,12 +20,35 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check Terraform formatting
-        working-directory: ./terragrunt
-        run: terraform fmt -recursive -check -diff
+        working-directory: ./terragrunt  # terraform files may be in root of terragrunt dir
+        run: |
+          echo "🔍 Checking Terraform code formatting..."
+          if terraform fmt --recursive --check --diff; then
+            echo "✅ Terraform formatting check passed!"
+          else
+            echo ""
+            echo "❌ Terraform files are not properly formatted."
+            echo "👉 Please run the following command locally and commit the changes:"
+            echo ""
+            echo "   terraform fmt --recursive"
+            echo ""
+            exit 1
+          fi
 
       - name: Check Terragrunt HCL formatting
-        run: terragrunt hcl fmt --check
-
+        run: |
+          echo "🔍 Checking Terragrunt HCL formatting..."
+          if terragrunt hcl fmt --check; then
+            echo "✅ Terragrunt HCL formatting check passed!"
+          else
+            echo ""
+            echo "❌ Terragrunt .hcl files are not properly formatted."
+            echo "👉 Please run the following command locally and commit the changes:"
+            echo ""
+            echo "   terragrunt hcl fmt"
+            echo ""
+            exit 1
+          fi
       # - name: Terragrunt validate
       #   run: terragrunt run --all validate
 
