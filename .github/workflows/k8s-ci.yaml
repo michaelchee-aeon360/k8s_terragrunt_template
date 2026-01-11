@@ -1,0 +1,30 @@
+name: Validate Kubernetes Manifests
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'k8s/apps/**'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    container:
+      image: alpine/k8s:1.31.7 # includes kubectl, helm, yq, git, bash
+    steps:
+      - name: Checkout code (current PR)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up variables
+        id: vars
+        run: |
+          echo "base_ref=${{ github.base_ref }}" >> "$GITHUB_OUTPUT"
+          echo "head_ref=${{ github.head_ref }}" >> "$GITHUB_OUTPUT"
+      - name: Validate YAML formatting and app names
+        run: bash ./.github/scripts/validate-yaml-and-app-names.sh
+      - name: Detect changed environment folders
+        id: changed_envs
+        run: bash ./.github/scripts/detect-changed-envs.sh "${{ github.base_ref }}"
+      - name: Run kustomize diff for changed environments
+        if: steps.changed_envs.outputs.no_changes == 'false'
+        run: bash ./.github/scripts/kustomize-diff.sh "${{ steps.changed_envs.outputs.changed_dirs }}" "${{ github.base_ref }}"

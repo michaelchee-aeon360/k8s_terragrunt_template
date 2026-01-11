@@ -1,9 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
 resources:
   - ../base
-
 patches:
   - target:
       kind: ApplicationSet
@@ -20,4 +18,4 @@ patches:
     patch: |-
       - op: replace
         path: /data/url
-        value: "https://argocd.dev.data.aeon360.com.my"
+        value: "https://argocd.hello.data.aeon360.com.my"
