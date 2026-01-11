@@ -1,0 +1,12 @@
+name: Terragrunt Plan
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "terragrunt/**"
+
+jobs:
+  format-validation-plan:
+    name: Run Terraform and Terragrunt Format Checks, Validation, and Plan
+    uses: ./.github/workflows/terragrunt-reuse-plan.yaml

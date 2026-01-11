@@ -1,0 +1,64 @@
+name: Reusable Terragrunt Format Check
+
+on:
+  workflow_call:
+    inputs:
+      terragrunt_root:
+        description: 'Root directory containing Terragrunt configs (relative to repo root)'
+        required: false
+        type: string
+        default: ./terragrunt/environments
+      terraform_working_dir:
+        description: 'Directory where .tf files live (for terraform fmt)'
+        required: false
+        type: string
+        default: ./terragrunt
+
+jobs:
+  format-validation-plan:
+    name: Check Terraform & Terragrunt Formatting
+    runs-on: ubuntu-latest
+    container:
+      image: alpine/terragrunt:1.14.1
+    defaults:
+      run:
+        working-directory: ${{ inputs.terragrunt_root }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check Terraform formatting
+        working-directory: ${{ inputs.terraform_working_dir }}
+        run: |
+          echo "🔍 Checking Terraform code formatting..."
+          if terraform fmt --recursive --check; then
+            echo "✅ Terraform formatting check passed!"
+          else
+            echo ""
+            echo "❌ Terraform files are not properly formatted."
+            echo "👉 Please run the following command locally and commit the changes:"
+            echo ""
+            echo "   terraform fmt --recursive"
+            echo ""
+            exit 1
+          fi
+
+      - name: Check Terragrunt HCL formatting
+        run: |
+          echo "🔍 Checking Terragrunt HCL formatting..."
+          if terragrunt hcl fmt --check; then
+            echo "✅ Terragrunt HCL formatting check passed!"
+          else
+            echo ""
+            echo "❌ Terragrunt .hcl files are not properly formatted."
+            echo "👉 Please run the following command locally and commit the changes:"
+            echo ""
+            echo "   terragrunt hcl fmt"
+            echo ""
+            exit 1
+          fi
+      # - name: Terragrunt validate
+      #   run: terragrunt run --all validate
+
+      # - name: Terragrunt plan
+      #   run: terragrunt run --all plan
