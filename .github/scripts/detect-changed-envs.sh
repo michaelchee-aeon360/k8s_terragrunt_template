@@ -31,8 +31,8 @@ else
     for env in base dev staging prod dr; do
       env_dir="$K8S_APPS_ROOT/$app/$env"
       if [ -f "$env_dir/kustomization.yaml" ]; then
-        echo "$env_dir"
         VALID_DIRS+=("$env_dir")
+        echo "$VALID_DIRS"
       fi
     done
   done
