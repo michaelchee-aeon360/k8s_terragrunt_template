@@ -23,7 +23,7 @@ jobs:
         working-directory: ./terragrunt  # terraform files may be in root of terragrunt dir
         run: |
           echo "🔍 Checking Terraform code formatting..."
-          if terraform fmt --recursive --check --diff; then
+          if terraform fmt --recursive --check; then
             echo "✅ Terraform formatting check passed!"
           else
             echo ""
