@@ -7,10 +7,8 @@ K8S_APPS_ROOT="k8s/apps"
 git config --global --add safe.directory "$GITHUB_WORKSPACE"
 git fetch origin "$BASE_REF":base_branch
 
-# Get all changed files in the PR
 CHANGED_FILES=$(git diff --name-only base_branch HEAD)
 
-# Extract unique app names that had ANY change under k8s/apps/<app>/
 CHANGED_APPS=$(echo "$CHANGED_FILES" | \
   grep -E "^$K8S_APPS_ROOT/[^/]+/" | \
   sed -E "s|^$K8S_APPS_ROOT/([^/]+)/.*|\1|" | \
@@ -23,19 +21,16 @@ if [ -z "$CHANGED_APPS" ]; then
   echo "ℹ️ No changes detected in k8s/apps/."
 else
   echo "✅ Apps with changes:"
-  echo "$CHANGED_APPS" | while read -r app; do
+  while IFS= read -r app; do
     [ -z "$app" ] && continue
     echo "  - $app"
-    
-    # For each environment, check if kustomization.yaml exists
-    for env in base dev staging prod dr; do
+    for env in dev staging prod dr; do
       env_dir="$K8S_APPS_ROOT/$app/$env"
       if [ -f "$env_dir/kustomization.yaml" ]; then
         VALID_DIRS+=("$env_dir")
-        echo "$VALID_DIRS"
       fi
     done
-  done
+  done <<< "$CHANGED_APPS"  # ← HERE: no pipe, uses here-string
 
   if [ ${#VALID_DIRS[@]} -eq 0 ]; then
     echo "no_changes=true" >> "$GITHUB_OUTPUT"
