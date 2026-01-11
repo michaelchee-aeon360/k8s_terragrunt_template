@@ -8,5 +8,5 @@ on:
 
 jobs:
   format-validation-plan:
-    name: Run Terraform and Terragrunt Format Checks, Validation, and Plan
+    name: PR Format Checks, Validation, and Plan
     uses: ./.github/workflows/terragrunt-reuse-plan.yaml
