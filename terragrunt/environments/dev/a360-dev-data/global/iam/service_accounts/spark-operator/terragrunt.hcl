@@ -8,7 +8,7 @@ terraform {
 }
 
 inputs = {
-  database_name =     include.root.locals.basename
+  database_name = include.root.locals.basename
   location_id   = include.root.locals.region
 }
 
