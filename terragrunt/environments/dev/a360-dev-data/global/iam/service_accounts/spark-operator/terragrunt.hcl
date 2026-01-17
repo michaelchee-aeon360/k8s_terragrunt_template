@@ -4,7 +4,7 @@ include "root" {
 }
 
 terraform {
-  source = "../../../../../../../modules/iam/service_accounts"
+  source = "${include.root.locals.modules_root_path}/iam/service_accounts"
 }
 
 inputs = {

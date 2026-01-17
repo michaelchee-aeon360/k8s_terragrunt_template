@@ -4,11 +4,11 @@ include "root" {
 }
 
 terraform {
-  source = "../../../../../../../modules/firestore"
+  source = "${include.root.locals.modules_root_path}/firestore"
 }
 
 inputs = {
   account_id   = include.root.locals.basename
   display_name = "Spark Operator Service Account"
-  description  = "Service account for Spark Operator"
+  description  = "Service account for Spark Operator test"
 }
