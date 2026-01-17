@@ -48,8 +48,11 @@ jobs:
             echo ""
             exit 1
           fi
+      
       # - name: Terragrunt validate
       #   run: terragrunt run --all validate
+      - name: Fix dubious ownership
+        run: git config --global --add safe.directory ${(github.workspace)}
 
       - name: Terragrunt plan
         run: terragrunt run --all --filter '[main...HEAD]' plan
