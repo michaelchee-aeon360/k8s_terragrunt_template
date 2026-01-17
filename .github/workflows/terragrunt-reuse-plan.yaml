@@ -3,16 +3,11 @@ name: Reusable Terragrunt Format Check
 on:
   workflow_call:
     inputs:
-      terragrunt_root:
-        description: 'Root directory containing Terragrunt configs (relative to repo root)'
+      run_type:
+        description: 'The pipeline run type, either merge or main'
         required: false
         type: string
-        default: ./terragrunt/environments
-      terraform_working_dir:
-        description: 'Directory where .tf files live (for terraform fmt)'
-        required: false
-        type: string
-        default: ./terragrunt
+        default: merge
 
 jobs:
   format-validation-plan:
@@ -20,15 +15,11 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: alpine/terragrunt:1.14.1
-    defaults:
-      run:
-        working-directory: ${{ inputs.terragrunt_root }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Check Terraform formatting
-        working-directory: ${{ inputs.terraform_working_dir }}
         run: |
           echo "🔍 Checking Terraform code formatting..."
           if terraform fmt --recursive --check; then

@@ -19,9 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: alpine/terragrunt:1.14.1
-    defaults:
-      run:
-        working-directory: ./terragrunt/environments
     environment: production
     needs: format-validation-plan
     steps:
