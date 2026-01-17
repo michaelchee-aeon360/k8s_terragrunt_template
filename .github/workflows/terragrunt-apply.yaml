@@ -18,7 +18,7 @@ jobs:
     name: Terragrunt Apply
     runs-on: ubuntu-latest
     container:
-      image: alpine/terragrunt:1.14.1
+      image: devopsinfra/docker-terragrunt:tf-1.14.3-tg-0.97.2
     environment: production
     needs: format-validation-plan
     steps:
