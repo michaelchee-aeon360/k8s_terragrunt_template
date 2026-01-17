@@ -53,18 +53,18 @@ jobs:
       
       # - name: Terragrunt validate
       #   run: terragrunt run --all validate
-      - name: Fix dubious ownership
-        run: git config --global --add safe.directory '*'
-      - name: Fetch main branch
-        if: ${{ inputs.run_type == 'merge' }}
-        run: git branch main origin/main
-      - name: Set Terragrunt filter
-        run: |
-          if [ "${{ inputs.run_type }}" = "main" ]; then
-            echo "TG_FILTER=[HEAD~1...HEAD]" >> $GITHUB_ENV
-          else
-            echo "TG_FILTER=[main...HEAD]" >> $GITHUB_ENV
-          fi
+      # - name: Fix dubious ownership
+      #   run: git config --global --add safe.directory '*'
+      # - name: Fetch main branch
+      #   if: ${{ inputs.run_type == 'merge' }}
+      #   run: git branch main origin/main
+      # - name: Set Terragrunt filter
+      #   run: |
+      #     if [ "${{ inputs.run_type }}" = "main" ]; then
+      #       echo "TG_FILTER=[HEAD~1...HEAD]" >> $GITHUB_ENV
+      #     else
+      #       echo "TG_FILTER=[main...HEAD]" >> $GITHUB_ENV
+      #     fi
 
-      - name: Terragrunt plan
-        run: terragrunt run --all --filter "$TG_FILTER" plan
+      # - name: Terragrunt plan
+      #   run: terragrunt run --all --filter "$TG_FILTER" plan
