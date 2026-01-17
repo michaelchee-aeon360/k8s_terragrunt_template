@@ -4,7 +4,7 @@ include "root" {
 }
 
 terraform {
-  source = "${get_repo_root()}//terragrunt/modules/firestore"
+  source = "${include.root.locals.modules_root_path}/firestore"
 }
 
 inputs = {
