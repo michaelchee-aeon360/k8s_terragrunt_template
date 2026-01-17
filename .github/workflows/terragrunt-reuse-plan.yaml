@@ -51,5 +51,5 @@ jobs:
       # - name: Terragrunt validate
       #   run: terragrunt run --all validate
 
-      # - name: Terragrunt plan
-      #   run: terragrunt run --all plan
+      - name: Terragrunt plan
+        run: terragrunt run --all --filter '[main...HEAD]' plan
