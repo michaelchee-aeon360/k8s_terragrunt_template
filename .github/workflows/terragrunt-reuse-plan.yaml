@@ -54,7 +54,9 @@ jobs:
       # - name: Terragrunt validate
       #   run: terragrunt run --all validate
       - name: Fix dubious ownership
-        run: git config --global --add safe.directory '*'
+        run: |
+          git config --global --add safe.directory '*'
+          git branch main origin/main
 
       - name: Terragrunt plan
         run: terragrunt run --all --filter '[main...HEAD]' plan
